@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>परीक्षा रिपोर्ट — पोलीस भरती पोर्टल</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 no-print">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <a href="profile.html" class="text-sm font-bold text-slate-900">← माझे प्रोफाईल व प्रगती</a>
+      <a href="dashboard.html" class="text-xs font-semibold text-blue-900 hover:underline">सराव पेपर्स</a>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <section class="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-sm print-card">
+      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-4">
+        <div>
+          <span class="inline-block text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-800 mb-1">परीक्षा निकाल रिपोर्ट</span>
+          <h1 id="rep-title" class="text-lg sm:text-xl font-bold text-slate-900"></h1>
+          <p id="rep-meta" class="text-xs text-slate-500 mt-1"></p>
+        </div>
+        <div class="flex flex-wrap gap-2 no-print">
+          <button id="btn-csv" type="button" class="px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50">CSV डाउनलोड</button>
+          <button id="btn-print" type="button" class="px-3 py-1.5 text-xs font-semibold bg-blue-900 hover:bg-blue-800 text-white rounded-lg">प्रिंट / PDF सेव्ह</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-5">
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-xs text-slate-500">एकूण गुण</p><p id="s-score" class="text-lg font-bold">0/0</p></div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3"><p class="text-xs text-emerald-700">बरोबर</p><p id="s-corr" class="text-lg font-bold text-emerald-700">0</p></div>
+        <div class="bg-rose-50 border border-rose-200 rounded-lg p-3"><p class="text-xs text-rose-700">चूक</p><p id="s-wrong" class="text-lg font-bold text-rose-700">0</p></div>
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3"><p class="text-xs text-slate-500">सोडवले नाही</p><p id="s-skip" class="text-lg font-bold">0</p></div>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 col-span-2 sm:col-span-1"><p class="text-xs text-blue-800">अचूकता</p><p id="s-acc" class="text-lg font-bold text-blue-900">0%</p></div>
+      </div>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-5 shadow-sm print-card">
+        <h2 class="text-sm font-bold text-slate-900 mb-3">विषयनिहाय विश्लेषण</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs sm:text-sm text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-50 text-slate-500">
+                <th class="py-2 px-2">विषय</th><th class="py-2 px-2 text-center">एकूण</th><th class="py-2 px-2 text-center text-emerald-700">बरोबर</th><th class="py-2 px-2 text-center text-rose-700">चूक</th><th class="py-2 px-2 text-center">सुटलेले</th><th class="py-2 px-2 text-right">अचूकता</th>
+              </tr>
+            </thead>
+            <tbody id="sub-tbody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-5 shadow-sm print-card">
+        <h2 class="text-sm font-bold text-slate-900 mb-3">विषयनिहाय आलेख</h2>
+        <div class="relative h-60"><canvas id="sub-chart"></canvas></div>
+      </div>
+    </div>
+
+    <section id="lb-card" class="hidden bg-white border border-slate-200 rounded-xl p-5 shadow-sm print-card">
+      <h2 class="text-sm font-bold text-slate-900 mb-3">बॅच रँक (Leaderboard)</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs sm:text-sm text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50 text-slate-500">
+              <th class="py-2 px-2">रँक</th><th class="py-2 px-2">विद्यार्थी</th><th class="py-2 px-2">भरती</th><th class="py-2 px-2 text-center">गुण</th><th class="py-2 px-2 text-center">अचूकता</th><th class="py-2 px-2 text-right">वेळ</th>
+            </tr>
+          </thead>
+          <tbody id="lb-tbody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print-card">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <h2 class="text-sm font-bold text-slate-900">उत्तरपत्रिका तपासणी व स्पष्टीकरण</h2>
+        <div class="flex gap-2 no-print">
+          <select id="f-sub" class="px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg">
+            <option value="all">सर्व विषय</option><option value="marathi">मराठी</option><option value="maths">गणित</option><option value="reasoning">बुद्धिमत्ता</option><option value="gk">जीके</option>
+          </select>
+          <select id="f-stat" class="px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg">
+            <option value="all">सर्व प्रश्न</option><option value="wrong">फक्त चुकलेले</option><option value="correct">फक्त बरोबर</option><option value="skipped">फक्त न सोडवलेले</option>
+          </select>
+        </div>
+      </div>
+      <div id="rev-list" class="divide-y divide-slate-100 mt-2"></div>
+    </section>
+  </main>
+
+  <div id="modal-flag" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+    <form id="form-flag" class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-3">
+      <h3 class="text-base font-bold text-slate-900">प्रश्नाबाबत शंका नोंदवा</h3>
+      <textarea id="flag-note" rows="3" required placeholder="शंका किंवा दुरुस्ती लिहा..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"></textarea>
+      <div class="flex justify-end gap-2">
+        <button id="btn-flag-close" type="button" class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg">रद्द करा</button>
+        <button type="submit" class="px-4 py-1.5 text-xs font-semibold bg-blue-900 text-white rounded-lg">पाठवा</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    let user = null, review = null, flagQId = null;
+
+    function renderReview() {
+      const list = document.getElementById('rev-list');
+      list.innerHTML = '';
+      const sf = document.getElementById('f-sub').value, stf = document.getElementById('f-stat').value;
+      const qs = review.questions || [];
+      const fil = qs.filter(q => {
+        if (sf !== 'all' && q.subject !== sf) return false;
+        const st = q.user_option === null ? 'skipped' : (q.user_option === q.correct_option ? 'correct' : 'wrong');
+        return stf === 'all' || st === stf;
+      });
+      if (fil.length === 0) { list.innerHTML = '<p class="py-6 text-center text-xs text-slate-500">कोणताही प्रश्न नाही.</p>'; return; }
+      fil.forEach(q => {
+        const idx = qs.findIndex(x => x.id === q.id) + 1;
+        const isSkip = q.user_option === null, isCorr = !isSkip && q.user_option === q.correct_option;
+        const div = document.createElement('div');
+        div.className = 'py-4 space-y-2';
+        div.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold">प्र. ${idx}</span>
+              <span class="text-[11px] px-2 py-0.5 rounded bg-blue-50 text-blue-800">${getSubjectShort(q.subject)}</span>
+              <span class="text-[11px] px-2 py-0.5 rounded font-semibold ${isCorr ? 'bg-emerald-50 text-emerald-700' : isSkip ? 'bg-slate-100 text-slate-600' : 'bg-rose-50 text-rose-700'}">${isCorr ? 'बरोबर' : isSkip ? 'सुटलेले' : 'चूक'}</span>
+            </div>
+            <button type="button" data-flg="${q.id}" class="text-[11px] text-slate-500 hover:text-rose-700 underline no-print">चूक कळवा</button>
+          </div>
+          <p class="text-sm font-medium text-slate-900">${q.question_text}</p>
+          ${q.image_url ? `<img src="${q.image_url}" alt="आकृती" class="max-h-56 rounded-lg border border-slate-200" />` : ''}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div class="px-3 py-2 rounded-lg border ${isCorr ? 'bg-emerald-50 border-emerald-200' : isSkip ? 'bg-slate-50 border-slate-200' : 'bg-rose-50 border-rose-200'}"><strong>तुमचे उत्तर:</strong> ${isSkip ? 'निवडले नाही' : OPT_LABELS[q.user_option] + ') ' + q.options[q.user_option]}</div>
+            <div class="px-3 py-2 rounded-lg border bg-emerald-50/70 border-emerald-200"><strong>बरोबर उत्तर:</strong> ${OPT_LABELS[q.correct_option]}) ${q.options[q.correct_option]}</div>
+          </div>
+          ${q.explanation ? `<p class="text-xs text-slate-600 bg-slate-50 px-3 py-2 rounded-lg"><strong>स्पष्टीकरण:</strong> ${q.explanation}</p>` : ''}
+        `;
+        div.querySelector('[data-flg]').addEventListener('click', () => {
+          flagQId = q.id;
+          document.getElementById('flag-note').value = '';
+          document.getElementById('modal-flag').classList.remove('hidden');
+          document.getElementById('modal-flag').classList.add('flex');
+        });
+        list.appendChild(div);
+      });
+    }
+
+    document.getElementById('f-sub').addEventListener('change', renderReview);
+    document.getElementById('f-stat').addEventListener('change', renderReview);
+    document.getElementById('btn-print').addEventListener('click', () => window.print());
+    document.getElementById('btn-csv').addEventListener('click', () => {
+      if (!review) return;
+      const a = review.attempt;
+      const rows = [['पोलीस भरती परीक्षा रिपोर्ट'], ['पेपर', a.paper_title], ['विद्यार्थी', user.full_name], ['गुण', `${a.correct_count}/${a.total_questions}`], [], ['विषय', 'एकूण', 'बरोबर', 'चूक', 'सुटलेले', 'अचूकता']];
+      (a.subject_summary || []).forEach(s => rows.push([getSubjectShort(s.subject), s.total, s.correct, s.wrong, s.skipped, s.accuracy + '%']));
+      downloadCSV('police_bharti_report.csv', rows);
+    });
+    document.getElementById('btn-flag-close').addEventListener('click', () => {
+      document.getElementById('modal-flag').classList.add('hidden');
+      document.getElementById('modal-flag').classList.remove('flex');
+    });
+    document.getElementById('form-flag').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await api.flagQuestion(user.id, review.attempt.paper_id, flagQId, document.getElementById('flag-note').value.trim());
+      document.getElementById('modal-flag').classList.add('hidden');
+      document.getElementById('modal-flag').classList.remove('flex');
+      showToast('तुमची शंका अ‍ॅडमिनकडे पाठवली आहे.');
+    });
+
+    (async function init() {
+      user = await api.requireAuth();
+      if (!user) return;
+      const attId = new URLSearchParams(window.location.search).get('attempt');
+      if (!attId) { window.location.href = 'profile.html'; return; }
+      review = await api.getAttemptReview(attId);
+      const a = review.attempt;
+
+      document.getElementById('rep-title').textContent = a.paper_title;
+      const dt = new Date(a.submitted_at).toLocaleString('mr-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      document.getElementById('rep-meta').textContent = `${user.full_name} • ${dt} • वेळ: ${formatTime(a.time_taken_sec)}`;
+      document.getElementById('s-score').textContent = `${a.correct_count} / ${a.total_questions}`;
+      document.getElementById('s-corr').textContent = String(a.correct_count);
+      document.getElementById('s-wrong').textContent = String(a.wrong_count);
+      document.getElementById('s-skip').textContent = String(a.skipped_count);
+      document.getElementById('s-acc').textContent = a.accuracy + '%';
+
+      const stats = a.subject_summary || [];
+      const tb = document.getElementById('sub-tbody');
+      stats.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="py-2.5 px-2 font-semibold">${getSubjectShort(s.subject)}</td><td class="py-2.5 px-2 text-center">${s.total}</td><td class="py-2.5 px-2 text-center font-semibold text-emerald-700">${s.correct}</td><td class="py-2.5 px-2 text-center font-semibold text-rose-700">${s.wrong}</td><td class="py-2.5 px-2 text-center text-slate-500">${s.skipped}</td><td class="py-2.5 px-2 text-right font-semibold">${s.accuracy}%</td>`;
+        tb.appendChild(tr);
+      });
+
+      new Chart(document.getElementById('sub-chart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: stats.map(s => getSubjectShort(s.subject)),
+          datasets: [
+            { label: 'बरोबर', data: stats.map(s => s.correct), backgroundColor: '#059669', borderRadius: 4 },
+            { label: 'चूक', data: stats.map(s => s.wrong), backgroundColor: '#dc2626', borderRadius: 4 },
+            { label: 'सुटलेले', data: stats.map(s => s.skipped), backgroundColor: '#cbd5e1', borderRadius: 4 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, plugins: { legend: { position: 'bottom' } } }
+      });
+
+      if (a.show_rank) {
+        const lb = await api.getLeaderboard(a.paper_id, user.id);
+        const ltb = document.getElementById('lb-tbody');
+        lb.forEach((r, i) => {
+          const tr = document.createElement('tr');
+          tr.className = r.is_me ? 'bg-blue-50/70 font-semibold' : '';
+          tr.innerHTML = `<td class="py-2 px-2 font-bold text-blue-900">#${i + 1}</td><td class="py-2 px-2">${r.student_name}</td><td class="py-2 px-2 text-slate-600">${r.bharti_type}</td><td class="py-2 px-2 text-center font-bold">${r.correct_count}/${r.total_questions}</td><td class="py-2 px-2 text-center">${r.accuracy}%</td><td class="py-2 px-2 text-right">${formatTime(r.time_taken_sec)}</td>`;
+          ltb.appendChild(tr);
+        });
+        document.getElementById('lb-card').classList.remove('hidden');
+      }
+      renderReview();
+    })();
+  </script>
+</body>
+</html>
