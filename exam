@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>पेपर सोडवा — पोलीस भरती पोर्टल</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
+    <!-- Sticky Exam Bar -->
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm sticky top-3 z-20 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="min-w-0">
+          <h1 id="exam-title" class="text-sm sm:text-base font-bold text-slate-900 truncate"></h1>
+          <div class="flex flex-wrap items-center gap-3 text-xs text-slate-600 mt-0.5">
+            <span id="timer-badge" class="font-bold text-blue-900">वेळ: <span id="exam-timer">00:00</span></span>
+            <span>सोडवलेले: <strong id="ans-count" class="text-slate-900">0</strong>/<span id="tot-count">0</span></span>
+            <span>नंतर तपासा: <strong id="rev-count" class="text-amber-700">0</strong></span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-palette" type="button" class="px-2.5 py-1.5 text-xs font-medium text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50">पॅलेट</button>
+          <button id="btn-exit" type="button" class="px-2.5 py-1.5 text-xs font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50">बाहेर पडा</button>
+          <button id="btn-submit" type="button" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg">सबमिट करा</button>
+        </div>
+      </div>
+
+      <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div id="progress-bar" class="h-full bg-blue-800 transition-all duration-200" style="width: 0%"></div>
+      </div>
+
+      <div id="subject-tabs" class="flex flex-wrap gap-1.5"></div>
+
+      <div id="palette-box" class="hidden pt-2 border-t border-slate-100">
+        <div id="palette-grid" class="flex flex-wrap gap-1.5"></div>
+      </div>
+    </div>
+
+    <div id="questions-wrap" class="space-y-4"></div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+      <p class="text-xs sm:text-sm text-slate-600">उत्तरे आपोआप सेव्ह होत आहेत. पेपर पूर्ण झाल्यावर सबमिट करा.</p>
+      <button id="btn-submit-bottom" type="button" class="px-5 py-2.5 text-sm font-semibold bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg">
+        पेपर सबमिट करा व रिपोर्ट पाहा
+      </button>
+    </div>
+  </main>
+
+  <!-- Submit Modal -->
+  <div id="modal-submit" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200">
+      <h3 class="text-base font-bold text-slate-900">पेपर सबमिट करायचा का?</h3>
+      <p class="text-xs text-slate-600 mt-1">सबमिट केल्यानंतर उत्तरे बदलता येणार नाहीत आणि तुमचा रिपोर्ट सेव्ह होईल.</p>
+      <div id="submit-summary" class="mt-4 bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs space-y-1.5"></div>
+      <div class="mt-5 flex justify-end gap-2">
+        <button id="btn-cancel-sub" type="button" class="px-4 py-2 text-xs font-medium text-slate-700 border border-slate-300 rounded-lg">मागे जा</button>
+        <button id="btn-confirm-sub" type="button" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg">होय, सबमिट करा</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    let currentUser = null, paper = null, questions = [], answers = {}, marked = {}, subFilter = 'all';
+    let startSec = 0, remSec = 0, timerId = null;
+
+    function autoSaveKey() { return 'pb_autosave_' + currentUser.id + '_' + paper.id; }
+    function saveLocal() { safeLSSet(autoSaveKey(), { answers, marked, remSec }); }
+
+    function updateHeader() {
+      const tot = questions.length, ans = Object.keys(answers).length, rev = Object.keys(marked).filter(k => marked[k]).length;
+      document.getElementById('tot-count').textContent = String(tot);
+      document.getElementById('ans-count').textContent = String(ans);
+      document.getElementById('rev-count').textContent = String(rev);
+      document.getElementById('progress-bar').style.width = (tot > 0 ? Math.round((ans / tot) * 100) : 0) + '%';
+      renderPalette();
+    }
+
+    function renderSubjectTabs() {
+      const wrap = document.getElementById('subject-tabs');
+      wrap.innerHTML = '';
+      const present = SUBJECTS.filter(s => questions.some(q => q.subject === s.id));
+      const tabs = [{ id: 'all', label: 'सर्व (' + questions.length + ')' }];
+      present.forEach(s => {
+        const qs = questions.filter(q => q.subject === s.id);
+        const solved = qs.filter(q => answers[q.id] !== undefined).length;
+        tabs.push({ id: s.id, label: s.short + ' (' + solved + '/' + qs.length + ')' });
+      });
+      tabs.forEach(t => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = subFilter === t.id ? 'px-3 py-1 rounded-lg text-xs font-semibold bg-blue-900 text-white' : 'px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200';
+        b.textContent = t.label;
+        b.addEventListener('click', () => { subFilter = t.id; renderSubjectTabs(); renderQuestions(); });
+        wrap.appendChild(b);
+      });
+    }
+
+    function renderPalette() {
+      const grid = document.getElementById('palette-grid');
+      grid.innerHTML = '';
+      questions.forEach((q, idx) => {
+        const isAns = answers[q.id] !== undefined, isRev = !!marked[q.id];
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'w-7 h-7 rounded text-xs font-bold border ' + (isRev ? 'bg-amber-500 text-white border-amber-600' : isAns ? 'bg-emerald-600 text-white border-emerald-700' : 'bg-slate-100 text-slate-700 border-slate-300');
+        b.textContent = String(idx + 1);
+        b.addEventListener('click', () => {
+          if (subFilter !== 'all' && subFilter !== q.subject) { subFilter = 'all'; renderSubjectTabs(); renderQuestions(); }
+          const el = document.getElementById('qcard-' + q.id);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        grid.appendChild(b);
+      });
+    }
+
+    function renderQuestions() {
+      const wrap = document.getElementById('questions-wrap');
+      wrap.innerHTML = '';
+      const list = subFilter === 'all' ? questions : questions.filter(q => q.subject === subFilter);
+      list.forEach(q => {
+        const gIdx = questions.findIndex(x => x.id === q.id) + 1;
+        const sel = answers[q.id], isM = !!marked[q.id];
+        const card = document.createElement('article');
+        card.id = 'qcard-' + q.id;
+        card.className = 'bg-white border rounded-xl p-5 shadow-sm ' + (isM ? 'border-amber-400' : 'border-slate-200');
+        card.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-800">प्र. ${gIdx}</span>
+              <span class="px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-800">${getSubjectShort(q.subject)}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" data-mark="${q.id}" class="px-2 py-0.5 rounded text-xs border ${isM ? 'bg-amber-50 border-amber-400 text-amber-800' : 'border-slate-200 text-slate-500'}">${isM ? '★ नंतर तपासा' : '☆ नंतर तपासा'}</button>
+              ${sel !== undefined ? `<button type="button" data-clr="${q.id}" class="text-xs text-slate-500 hover:text-rose-600 underline">निवड काढा</button>` : ''}
+            </div>
+          </div>
+          <p class="text-sm sm:text-base font-semibold text-slate-900 leading-relaxed mb-3">${q.question_text}</p>
+          ${q.image_url ? `<img src="${q.image_url}" alt="आकृती" class="max-w-full max-h-72 h-auto rounded-lg border border-slate-200 mb-4" />` : ''}
+          <div class="space-y-2.5" data-opts></div>
+        `;
+        const optsDiv = card.querySelector('[data-opts]');
+        (q.options || []).forEach((opt, oi) => {
+          const isSel = sel === oi;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'option-btn w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-lg border border-slate-200 bg-white' + (isSel ? ' selected' : '');
+          btn.innerHTML = `
+            <span class="opt-badge w-7 h-7 rounded-full border border-slate-300 flex items-center justify-center text-xs font-bold shrink-0 text-slate-700">${OPT_LABELS[oi]}</span>
+            <span class="text-sm text-slate-800 flex-1">${opt}</span>
+          `;
+          btn.addEventListener('click', () => {
+            answers[q.id] = oi;
+            saveLocal();
+            updateHeader();
+            renderSubjectTabs();
+            renderQuestions();
+          });
+          optsDiv.appendChild(btn);
+        });
+        card.querySelector('[data-mark]').addEventListener('click', () => {
+          marked[q.id] = !marked[q.id];
+          saveLocal();
+          updateHeader();
+          renderQuestions();
+        });
+        const clr = card.querySelector('[data-clr]');
+        if (clr) clr.addEventListener('click', () => {
+          delete answers[q.id];
+          saveLocal();
+          updateHeader();
+          renderSubjectTabs();
+          renderQuestions();
+        });
+        wrap.appendChild(card);
+      });
+    }
+
+    function openSubmit() {
+      const box = document.getElementById('submit-summary');
+      let html = `<div class="flex justify-between font-bold pb-1 border-b border-slate-200"><span>एकूण सोडवलेले:</span><span>${Object.keys(answers).length} / ${questions.length}</span></div>`;
+      SUBJECTS.forEach(s => {
+        const qs = questions.filter(q => q.subject === s.id);
+        if (qs.length > 0) html += `<div class="flex justify-between text-slate-600"><span>${s.short}</span><span>${qs.filter(q => answers[q.id] !== undefined).length} / ${qs.length}</span></div>`;
+      });
+      box.innerHTML = html;
+      document.getElementById('modal-submit').classList.remove('hidden');
+      document.getElementById('modal-submit').classList.add('flex');
+    }
+
+    async function doSubmit() {
+      if (timerId) { clearInterval(timerId); timerId = null; }
+      const timeTaken = Math.max(1, startSec - remSec);
+      try {
+        const res = await api.submitExam(currentUser.id, paper.id, answers, timeTaken);
+        try { localStorage.removeItem(autoSaveKey()); } catch (e) {}
+        window.location.href = 'report.html?attempt=' + res.attempt_id;
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+
+    document.getElementById('btn-palette').addEventListener('click', () => document.getElementById('palette-box').classList.toggle('hidden'));
+    document.getElementById('btn-exit').addEventListener('click', () => { saveLocal(); window.location.href = 'dashboard.html'; });
+    document.getElementById('btn-submit').addEventListener('click', openSubmit);
+    document.getElementById('btn-submit-bottom').addEventListener('click', openSubmit);
+    document.getElementById('btn-cancel-sub').addEventListener('click', () => {
+      document.getElementById('modal-submit').classList.add('hidden');
+      document.getElementById('modal-submit').classList.remove('flex');
+    });
+    document.getElementById('btn-confirm-sub').addEventListener('click', doSubmit);
+
+    (async function init() {
+      currentUser = await api.requireAuth();
+      if (!currentUser) return;
+      const paperId = new URLSearchParams(window.location.search).get('paper');
+      if (!paperId) { window.location.href = 'dashboard.html'; return; }
+      paper = await api.getPaperById(paperId);
+      if (!paper) { window.location.href = 'dashboard.html'; return; }
+
+      questions = await api.getExamQuestions(paperId);
+      if (paper.shuffle_questions) questions = [...questions].sort(() => Math.random() - 0.5);
+
+      const saved = safeLSGet(autoSaveKey(), null);
+      answers = (saved && saved.answers) ? saved.answers : {};
+      marked = (saved && saved.marked) ? saved.marked : {};
+      startSec = paper.duration_minutes * 60;
+      remSec = (saved && saved.remSec > 10) ? saved.remSec : startSec;
+
+      document.getElementById('exam-title').textContent = paper.title;
+      document.getElementById('exam-timer').textContent = formatTime(remSec);
+      timerId = setInterval(() => {
+        remSec -= 1;
+        document.getElementById('exam-timer').textContent = formatTime(remSec);
+        if (remSec <= 120) document.getElementById('timer-badge').classList.replace('text-blue-900', 'text-rose-700');
+        if (remSec % 10 === 0) saveLocal();
+        if (remSec <= 0) doSubmit();
+      }, 1000);
+
+      renderSubjectTabs();
+      renderQuestions();
+      updateHeader();
+    })();
+  </script>
+</body>
+</html>
