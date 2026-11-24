@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>महाराष्ट्र पोलीस भरती सराव परीक्षा पोर्टल</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <a href="index.html" class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 rounded-lg bg-blue-900 text-white flex items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <div class="truncate">
+          <span class="block text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">पोलीस भरती सराव पोर्टल</span>
+          <span class="block text-[11px] text-slate-500 hidden sm:block">महाराष्ट्र पोलीस भरती ऑनलाइन सराव</span>
+        </div>
+      </a>
+      <div class="flex items-center gap-2 shrink-0">
+        <a href="login.html" class="px-3.5 py-2 text-xs sm:text-sm font-semibold text-blue-900 hover:bg-blue-50 rounded-lg border border-blue-200 transition-colors">
+          लॉगिन करा
+        </a>
+        <a href="register.html" class="px-3.5 py-2 text-xs sm:text-sm font-semibold bg-blue-900 hover:bg-blue-800 text-white rounded-lg shadow-sm transition-colors">
+          नवीन नोंदणी
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-10">
+    <section class="bg-white border border-slate-200 rounded-2xl p-6 sm:p-10 shadow-sm">
+      <div class="max-w-2xl space-y-4">
+        <span class="inline-block text-xs font-semibold px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-100">
+          जिल्हा पोलीस • SRPF • चालक • कारागृह भरती
+        </span>
+        <h1 class="text-2xl sm:text-4xl font-bold text-slate-900 leading-snug">
+          पोलीस भरतीसाठी सिस्टमॅटिक ऑनलाइन सराव परीक्षा पोर्टल
+        </h1>
+        <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
+          प्रत्येक प्रश्नाच्या खालीच पर्याय टिक करण्याची सोपी मांडणी, वेळेचे अचूक नियोजन, पेपरनंतर विषयनिहाय बरोबर व चुकलेल्या प्रश्नांचा रिपोर्ट आणि तुमच्या प्रोफाईलमध्ये कायमचा प्रगती आलेख.
+        </p>
+        <div class="pt-2 flex flex-wrap items-center gap-3">
+          <a href="register.html" class="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors">
+            विद्यार्थी नवीन नोंदणी करा
+          </a>
+          <a href="login.html" class="px-6 py-3 bg-white hover:bg-slate-50 text-slate-800 text-sm font-semibold rounded-lg border border-slate-300 transition-colors">
+            आधीच खाते आहे? लॉगिन करा
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 Subjects Grid -->
+    <section class="space-y-4">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500">पोर्टलमधील चार प्रमुख विषय</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-800">विषय १</span>
+          <h3 class="text-base font-bold text-slate-900 mt-2">मराठी</h3>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">व्याकरण, समानार्थी, विरुद्धार्थी, वाक्प्रचार, म्हणी आणि शब्दसंग्रह.</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800">विषय २</span>
+          <h3 class="text-base font-bold text-slate-900 mt-2">गणित</h3>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">नफा-तोटा, शेकडेवारी, सरळव्याज, सरासरी, गुणोत्तर व काम-काळ.</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800">विषय ३</span>
+          <h3 class="text-base font-bold text-slate-900 mt-2">बुद्धिमत्ता</h3>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">संख्यामालिका, आकृत्या, सांकेतिक भाषा, दिशा, नातेसंबंध व क्रम.</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800">विषय ४</span>
+          <h3 class="text-base font-bold text-slate-900 mt-2">जीके (सामान्य ज्ञान)</h3>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">महाराष्ट्र भूगोल, इतिहास, राज्यघटना, चालू घडामोडी व पोलीस प्रशासन.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Highlights -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-1.5">
+        <h3 class="text-sm font-bold text-slate-900">१. सुटसुटीत पेपर रचना</h3>
+        <p class="text-xs text-slate-600 leading-relaxed">प्रश्नाच्या खालीच पर्याय टिक करण्याची सोय, ऑटो-सेव्ह आणि वेळ संपताच ऑटो-सबमिट.</p>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-1.5">
+        <h3 class="text-sm font-bold text-slate-900">२. विषयनिहाय अचूक रिपोर्ट</h3>
+        <p class="text-xs text-slate-600 leading-relaxed">पेपरनंतर चारही विषयांचे किती प्रश्न बरोबर व चुकले याचा रिपोर्ट, स्पष्टीकरण व PDF/CSV डाउनलोड.</p>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-1.5">
+        <h3 class="text-sm font-bold text-slate-900">३. विद्यार्थी प्रोफाईल व ग्राफ</h3>
+        <p class="text-xs text-slate-600 leading-relaxed">लॉगिन केल्यावर प्रोफाईलमध्ये सोडवलेले सर्व पेपर्स, मार्क्स आणि प्रगतीचे ग्राफ्स एका नजरेत पाहा.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 py-5 text-center text-xs text-slate-500">
+    महाराष्ट्र पोलीस भरती सराव परीक्षा पोर्टल • मोजकी, सुटसुटीत आणि सुरक्षित परीक्षा प्रणाली
+  </footer>
+
+</body>
+</html>
