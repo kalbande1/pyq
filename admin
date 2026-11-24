@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>अ‍ॅडमिन पॅनेल — पोलीस भरती पोर्टल</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <div class="truncate">
+        <h1 class="text-sm sm:text-base font-bold text-slate-900">अ‍ॅडमिन पॅनेल — पोलीस भरती पोर्टल</h1>
+        <p id="adm-sub" class="text-xs text-slate-500"></p>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <a href="dashboard.html" class="px-3 py-1.5 text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100">विद्यार्थी व्ह्यू</a>
+        <button id="btn-logout" type="button" class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-rose-700 border border-slate-200 rounded-lg">लॉगआउट</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div class="bg-white border border-slate-200 rounded-xl p-4"><p class="text-xs text-slate-500">एकूण विद्यार्थी</p><p id="k-stu" class="text-xl font-bold mt-0.5">0</p></div>
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4"><p class="text-xs text-amber-800">मंजुरी प्रलंबित</p><p id="k-pen" class="text-xl font-bold text-amber-900 mt-0.5">0</p></div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4"><p class="text-xs text-slate-500">एकूण पेपर्स</p><p id="k-pap" class="text-xl font-bold mt-0.5">0</p></div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4"><p class="text-xs text-slate-500">सोडवलेले पेपर्स</p><p id="k-att" class="text-xl font-bold text-blue-900 mt-0.5">0</p></div>
+      <div class="bg-white border border-slate-200 rounded-xl p-4 col-span-2 sm:col-span-1"><p class="text-xs text-slate-500">प्रलंबित शंका</p><p id="k-flg" class="text-xl font-bold text-rose-700 mt-0.5">0</p></div>
+    </div>
+
+    <div class="flex flex-wrap gap-4 border-b border-slate-200">
+      <button id="t-students" type="button" class="pb-2.5 text-sm text-slate-600 nav-tab-active">विद्यार्थी व मंजुरी</button>
+      <button id="t-papers" type="button" class="pb-2.5 text-sm text-slate-600">पेपर व प्रश्न अपलोड</button>
+      <button id="t-results" type="button" class="pb-2.5 text-sm text-slate-600">निकाल व रँक</button>
+      <button id="t-flags" type="button" class="pb-2.5 text-sm text-slate-600">प्रश्नांवरील शंका</button>
+    </div>
+
+    <!-- Students -->
+    <section id="p-students" class="space-y-5">
+      <div id="pending-box" class="hidden bg-amber-50/70 border border-amber-200 rounded-xl p-5 space-y-3">
+        <h2 class="text-sm font-bold text-amber-900">मंजुरीसाठी प्रलंबित विद्यार्थी</h2>
+        <div id="pending-list" class="space-y-2.5"></div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <h2 class="text-sm font-bold text-slate-900 mb-3">मंजूर विद्यार्थी यादी</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs sm:text-sm text-left border-collapse">
+            <thead><tr class="border-b border-slate-200 bg-slate-50 text-slate-500"><th class="py-2 px-2">नाव</th><th class="py-2 px-2">मोबाईल</th><th class="py-2 px-2">ईमेल</th><th class="py-2 px-2">भरती</th><th class="py-2 px-2 text-center">स्थिती</th><th class="py-2 px-2 text-right">क्रिया</th></tr></thead>
+            <tbody id="stu-tbody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Papers & CSV + Auto-Compress Images -->
+    <section id="p-papers" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <form id="form-paper" class="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3.5 h-fit">
+          <h2 class="text-sm font-bold text-slate-900">नवीन पेपर तयार करा</h2>
+          <input id="np-title" type="text" required placeholder="पेपरचे नाव (उदा. पोलीस भरती सराव ०३)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg" />
+          <input id="np-dur" type="number" min="5" max="180" value="60" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg" />
+          <div class="space-y-2 text-xs text-slate-700">
+            <label class="flex items-center gap-2"><input id="np-multi" type="checkbox" /> <span>एकापेक्षा जास्त वेळा सोडवण्याची परवानगी</span></label>
+            <label class="flex items-center gap-2"><input id="np-shuf" type="checkbox" /> <span>प्रश्नांचा क्रम बदला (Shuffle)</span></label>
+            <label class="flex items-center gap-2"><input id="np-rank" type="checkbox" checked /> <span>बॅच रँक दाखवा</span></label>
+          </div>
+          <button type="submit" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white text-sm font-semibold rounded-lg">पेपर तयार करा</button>
+        </form>
+        <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+          <h2 class="text-sm font-bold text-slate-900">सर्व प्रश्नपत्रिका</h2>
+          <div id="papers-list" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <div id="qm-box" class="hidden bg-white border border-blue-200 rounded-xl p-5 shadow-sm space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div>
+            <h3 id="qm-title" class="text-base font-bold text-slate-900"></h3>
+            <p id="qm-counts" class="text-xs text-slate-500"></p>
+          </div>
+          <button id="btn-qm-close" type="button" class="px-3 py-1.5 text-xs bg-slate-100 rounded-lg">बंद करा</button>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs font-bold text-slate-900">CSV अपलोड करा (नंतर खालील यादीत कोणत्याही प्रश्नासमोर ऑटो-कॉम्प्रेस इमेज जोडा)</p>
+            <button id="btn-tpl" type="button" class="px-3 py-1.5 text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 rounded-lg">नमुना CSV डाउनलोड</button>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <input id="csv-input" type="file" accept=".csv,text/csv" class="text-xs" />
+            <button id="btn-csv-up" type="button" class="px-4 py-1.5 text-xs font-semibold bg-emerald-700 text-white rounded-lg">CSV प्रश्न जोडा</button>
+          </div>
+        </div>
+
+        <div id="qm-list" class="divide-y divide-slate-100 border border-slate-200 rounded-xl px-4"></div>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section id="p-results" class="hidden bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <select id="res-filter" class="px-3 py-1.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-lg"></select>
+        <button id="btn-res-csv" type="button" class="px-3 py-1.5 text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 rounded-lg">निकाल CSV डाउनलोड</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs sm:text-sm text-left border-collapse">
+          <thead><tr class="border-b border-slate-200 bg-slate-50 text-slate-500"><th class="py-2 px-2">रँक</th><th class="py-2 px-2">विद्यार्थी</th><th class="py-2 px-2">पेपर</th><th class="py-2 px-2 text-center">गुण</th><th class="py-2 px-2 text-center">मराठी</th><th class="py-2 px-2 text-center">गणित</th><th class="py-2 px-2 text-center">बुद्धिमत्ता</th><th class="py-2 px-2 text-center">जीके</th><th class="py-2 px-2 text-right">अचूकता</th></tr></thead>
+          <tbody id="res-tbody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Flags -->
+    <section id="p-flags" class="hidden bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
+      <h2 class="text-sm font-bold text-slate-900">नोंदवलेल्या शंका</h2>
+      <div id="flags-list" class="space-y-3"></div>
+    </section>
+  </main>
+
+  <input id="img-input" type="file" accept="image/*" class="hidden" />
+
+  <script src="config.js"></script>
+  <script>
+    let adminUser = null, admData = null, selPaperId = null, imgTargetQId = null;
+
+    function switchTab(t) {
+      ['students', 'papers', 'results', 'flags'].forEach(k => {
+        document.getElementById('t-' + k).classList.toggle('nav-tab-active', k === t);
+        document.getElementById('p-' + k).classList.toggle('hidden', k !== t);
+      });
+    }
+    ['students', 'papers', 'results', 'flags'].forEach(k => document.getElementById('t-' + k).addEventListener('click', () => switchTab(k)));
+    document.getElementById('btn-logout').addEventListener('click', () => api.logout());
+
+    async function refresh() {
+      admData = await api.adminGetAll();
+      const pend = admData.students.filter(s => !s.is_approved);
+      const appr = admData.students.filter(s => s.is_approved);
+      document.getElementById('k-stu').textContent = String(appr.length);
+      document.getElementById('k-pen').textContent = String(pend.length);
+      document.getElementById('k-pap').textContent = String(admData.papers.length);
+      document.getElementById('k-att').textContent = String(admData.attempts.length);
+      document.getElementById('k-flg').textContent = String(admData.flags.filter(f => !f.is_resolved).length);
+
+      // Pending
+      const pb = document.getElementById('pending-box'), pl = document.getElementById('pending-list');
+      pl.innerHTML = '';
+      pb.classList.toggle('hidden', pend.length === 0);
+      pend.forEach(s => {
+        const d = document.createElement('div');
+        d.className = 'bg-white border border-amber-200 rounded-lg p-3 flex flex-wrap items-center justify-between gap-2 text-xs';
+        d.innerHTML = `<div><strong>${s.full_name}</strong> (${s.bharti_type})<br/>मोबाईल: ${s.mobile} • ${s.email}</div><div class="flex gap-2"><button data-ap="${s.id}" class="px-3 py-1.5 bg-emerald-700 text-white font-semibold rounded-lg">Approve</button><button data-rj="${s.id}" class="px-3 py-1.5 text-rose-700 border border-rose-200 rounded-lg">रद्द करा</button></div>`;
+        d.querySelector('[data-ap]').addEventListener('click', async () => { await api.adminUpdateStudent(s.id, { is_approved: true, is_active: true }); showToast('मंजुरी दिली.'); refresh(); });
+        d.querySelector('[data-rj]').addEventListener('click', async () => { await api.adminDeleteStudent(s.id); showToast('रद्द केले.'); refresh(); });
+        pl.appendChild(d);
+      });
+
+      // Students
+      const stb = document.getElementById('stu-tbody');
+      stb.innerHTML = '';
+      appr.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="py-2.5 px-2 font-semibold">${s.full_name}</td><td class="py-2.5 px-2">${s.mobile}</td><td class="py-2.5 px-2 text-slate-600">${s.email}</td><td class="py-2.5 px-2">${s.bharti_type}</td><td class="py-2.5 px-2 text-center"><span class="px-2 py-0.5 rounded text-[11px] font-semibold ${s.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${s.is_active ? 'सुरू' : 'बंद'}</span></td><td class="py-2.5 px-2 text-right"><button data-tg="${s.id}" class="text-xs text-blue-900 hover:underline">${s.is_active ? 'बंद करा' : 'सुरू करा'}</button></td>`;
+        tr.querySelector('[data-tg]').addEventListener('click', async () => { await api.adminUpdateStudent(s.id, { is_active: !s.is_active }); refresh(); });
+        stb.appendChild(tr);
+      });
+
+      // Papers
+      const plist = document.getElementById('papers-list');
+      plist.innerHTML = '';
+      admData.papers.forEach(p => {
+        const d = document.createElement('div');
+        d.className = 'border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2';
+        d.innerHTML = `<div><strong class="text-sm">${p.title}</strong><p class="text-xs text-slate-500">प्रश्न: ${p.q_count} • वेळ: ${p.duration_minutes} मि.</p></div><div class="flex gap-1.5"><button data-qm="${p.id}" class="px-3 py-1.5 text-xs font-semibold bg-blue-900 text-white rounded-lg">प्रश्न / CSV / इमेज</button><button data-pub="${p.id}" class="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg">${p.is_published ? 'लपवा' : 'पब्लिश'}</button><button data-del="${p.id}" class="px-2.5 py-1.5 text-xs text-rose-700 rounded-lg">हटवा</button></div>`;
+        d.querySelector('[data-qm]').addEventListener('click', () => openQM(p));
+        d.querySelector('[data-pub]').addEventListener('click', async () => { await api.adminUpdatePaper(p.id, { is_published: !p.is_published }); refresh(); });
+        d.querySelector('[data-del]').addEventListener('click', async () => { await api.adminDeletePaper(p.id); refresh(); });
+        plist.appendChild(d);
+      });
+
+      // Results
+      const sel = document.getElementById('res-filter');
+      sel.innerHTML = '<option value="all">सर्व पेपर्स</option>' + admData.papers.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+      const drawRes = () => {
+        const fid = sel.value;
+        const rows = admData.attempts.filter(a => fid === 'all' || a.paper_id === fid).sort((a, b) => b.correct_count - a.correct_count || a.time_taken_sec - b.time_taken_sec);
+        const rtb = document.getElementById('res-tbody');
+        rtb.innerHTML = '';
+        rows.forEach((a, i) => {
+          const gs = (sid) => { const s = (a.subject_summary || []).find(x => x.subject === sid); return s ? `${s.correct}/${s.total}` : '-'; };
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td class="py-2 px-2 font-bold text-blue-900">#${i + 1}</td><td class="py-2 px-2 font-semibold">${a.student_name}</td><td class="py-2 px-2 text-slate-600">${a.paper_title}</td><td class="py-2 px-2 text-center font-bold">${a.correct_count}/${a.total_questions}</td><td class="py-2 px-2 text-center">${gs('marathi')}</td><td class="py-2 px-2 text-center">${gs('maths')}</td><td class="py-2 px-2 text-center">${gs('reasoning')}</td><td class="py-2 px-2 text-center">${gs('gk')}</td><td class="py-2 px-2 text-right font-semibold">${a.accuracy}%</td>`;
+          rtb.appendChild(tr);
+        });
+      };
+      sel.onchange = drawRes;
+      drawRes();
+
+      // Flags
+      const fl = document.getElementById('flags-list');
+      fl.innerHTML = '';
+      if (admData.flags.length === 0) fl.innerHTML = '<p class="text-xs text-slate-500">कोणतीही शंका नाही.</p>';
+      admData.flags.forEach(f => {
+        const d = document.createElement('div');
+        d.className = 'border rounded-xl p-3 flex flex-wrap justify-between gap-2 text-xs';
+        d.innerHTML = `<div><strong>${f.student_name}</strong> (${f.paper_title})<br/>प्रश्न: ${f.question_text}<br/><span class="text-rose-700">शंका: ${f.note}</span></div>${f.is_resolved ? '<span class="text-emerald-700 font-semibold">✓ सोडवले</span>' : `<button data-rf="${f.id}" class="px-3 py-1 bg-emerald-700 text-white rounded-lg">Resolve</button>`}`;
+        const b = d.querySelector('[data-rf]');
+        if (b) b.addEventListener('click', async () => { await api.adminResolveFlag(f.id); refresh(); });
+        fl.appendChild(d);
+      });
+    }
+
+    async function openQM(p) {
+      selPaperId = p.id;
+      document.getElementById('qm-title').textContent = p.title;
+      document.getElementById('qm-box').classList.remove('hidden');
+      const qs = await api.adminGetPaperQuestions(p.id);
+      const cnt = { marathi: 0, maths: 0, reasoning: 0, gk: 0 };
+      qs.forEach(q => { if (cnt[q.subject] !== undefined) cnt[q.subject]++; });
+      document.getElementById('qm-counts').textContent = `एकूण ${qs.length} — मराठी: ${cnt.marathi} • गणित: ${cnt.maths} • बुद्धिमत्ता: ${cnt.reasoning} • जीके: ${cnt.gk}`;
+      const list = document.getElementById('qm-list');
+      list.innerHTML = '';
+      qs.forEach((q, i) => {
+        const d = document.createElement('div');
+        d.className = 'py-3 flex flex-wrap items-start justify-between gap-3 text-xs';
+        d.innerHTML = `<div class="flex-1"><span class="font-bold">प्र. ${i + 1}</span> (${getSubjectShort(q.subject)}) • उत्तर: ${OPT_LABELS[q.correct_option]}<p class="text-sm font-medium mt-1">${q.question_text}</p>${q.image_url ? `<img src="${q.image_url}" class="max-h-24 rounded border mt-1" />` : ''}</div><div class="flex gap-2"><button data-im="${q.id}" class="px-2.5 py-1.5 font-semibold text-blue-900 bg-blue-50 border border-blue-200 rounded-lg">${q.image_url ? 'इमेज बदला' : 'इमेज जोडा'}</button><button data-dq="${q.id}" class="px-2 py-1.5 text-rose-700">हटवा</button></div>`;
+        d.querySelector('[data-im]').addEventListener('click', () => { imgTargetQId = q.id; const inp = document.getElementById('img-input'); inp.value = ''; inp.click(); });
+        d.querySelector('[data-dq]').addEventListener('click', async () => { await api.adminDeleteQuestion(q.id); openQM(p); refresh(); });
+        list.appendChild(d);
+      });
+    }
+
+    document.getElementById('btn-qm-close').addEventListener('click', () => document.getElementById('qm-box').classList.add('hidden'));
+    document.getElementById('form-paper').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const np = await api.adminCreatePaper(adminUser.id, {
+        title: document.getElementById('np-title').value.trim(),
+        duration_minutes: Number(document.getElementById('np-dur').value) || 60,
+        allow_multiple_attempts: document.getElementById('np-multi').checked,
+        shuffle_questions: document.getElementById('np-shuf').checked,
+        show_rank: document.getElementById('np-rank').checked
+      });
+      document.getElementById('np-title').value = '';
+      showToast('नवीन पेपर तयार झाला!');
+      await refresh();
+      openQM(np);
+    });
+
+    document.getElementById('btn-tpl').addEventListener('click', () => {
+      downloadCSV('sample_questions_template.csv', [
+        ['subject', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_option', 'explanation'],
+        ['marathi', "'सूर्य' या शब्दाचा समानार्थी शब्द कोणता?", 'शशी', 'भानू', 'पवन', 'जलद', 'B', "'भानू' म्हणजे सूर्य."]
+      ]);
+    });
+
+    document.getElementById('btn-csv-up').addEventListener('click', async () => {
+      const inp = document.getElementById('csv-input');
+      if (!inp.files || !inp.files[0]) { showToast('आधी CSV निवडा.'); return; }
+      const rows = parseCSV(await inp.files[0].text());
+      const am = { a: 0, b: 1, c: 2, d: 3, '0': 0, '1': 1, '2': 2, '3': 3, 'अ': 0, 'ब': 1, 'क': 2, 'ड': 3 };
+      const list = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (r.length < 7) continue;
+        const sub = (r[0] || '').toLowerCase().trim();
+        const corr = am[(r[6] || '').toLowerCase().trim()];
+        if (!['marathi', 'maths', 'reasoning', 'gk'].includes(sub) || corr === undefined) continue;
+        list.push({ subject: sub, question_text: r[1], options: [r[2], r[3], r[4], r[5]], correct_option: corr, explanation: r[7] || '' });
+      }
+      if (list.length === 0) { showToast('CSV फॉरमॅट तपासा.'); return; }
+      await api.adminAddQuestionsBulk(selPaperId, list);
+      inp.value = '';
+      showToast(list.length + ' प्रश्न जोडले!');
+      const p = admData.papers.find(x => x.id === selPaperId);
+      await refresh();
+      if (p) openQM(p);
+    });
+
+    document.getElementById('img-input').addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file || !imgTargetQId) return;
+      showToast('इमेज ऑटो-कॉम्प्रेस होत आहे...');
+      const res = await api.adminUploadQuestionImage(imgTargetQId, file);
+      showToast(`इमेज सेव्ह झाली (${res.originalKB} KB → ${res.compressedKB} KB WebP)`);
+      const p = admData.papers.find(x => x.id === selPaperId);
+      if (p) openQM(p);
+    });
+
+    document.getElementById('btn-res-csv').addEventListener('click', () => {
+      const fid = document.getElementById('res-filter').value;
+      const rows = [['रँक', 'विद्यार्थी', 'पेपर', 'गुण', 'अचूकता']];
+      admData.attempts.filter(a => fid === 'all' || a.paper_id === fid).forEach((a, i) => rows.push([i + 1, a.student_name, a.paper_title, `${a.correct_count}/${a.total_questions}`, a.accuracy + '%']));
+      downloadCSV('batch_results.csv', rows);
+    });
+
+    (async function init() {
+      adminUser = await api.requireAuth({ adminOnly: true });
+      if (!adminUser) return;
+      document.getElementById('adm-sub').textContent = adminUser.full_name + ' • ' + adminUser.mobile;
+      await refresh();
+    })();
+  </script>
+</body>
+</html>
