@@ -2,8 +2,8 @@
 // महाराष्ट्र पोलीस भरती सराव परीक्षा पोर्टल — सामाईक कॉन्फिगरेशन व API (config.js)
 // लाईव्ह करण्यासाठी फक्त इथेच SUPABASE_URL व SUPABASE_ANON_KEY पेस्ट करा.
 // =============================================================================
-const SUPABASE_URL = '';
-const SUPABASE_ANON_KEY = '';
+const SUPABASE_URL = 'sb_publishable_pY3CSKr0PFNuYXhZmoXf_g_ziv8MZ4A';
+const SUPABASE_ANON_KEY = 'sb_publishable_pY3CSKr0PFNuYXhZmoXf_g_ziv8MZ4A';
 
 const IS_DEMO_MODE = !SUPABASE_URL || !SUPABASE_ANON_KEY;
 const sb = (!IS_DEMO_MODE && window.supabase)
